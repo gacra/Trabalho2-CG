@@ -1,9 +1,9 @@
 package trabalho.cg;
 
 import com.sun.opengl.util.GLUT;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import javafx.util.Pair;
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
@@ -14,28 +14,28 @@ import javax.swing.event.MouseInputListener;
 /**
  * Responsável pela renderização dos objetos.
  */
-public class Renderer implements  GLEventListener, MouseInputListener{
+public class Renderer implements  GLEventListener, MouseInputListener, KeyListener{
     private final GLCanvas canvas;  //Canvas do OpenGL
     private GL gl;
     private GLU glu;
     private GLUT glut;
-    PreePol preePol;
-    ArrayList<Pair<Integer, Integer>> listaPontos; //Lista de pontos adicionados
-    boolean flagPree;       //true se o polígono estiver preenchido
-    int linha;              //Linha de varredura atual
-    float red, green, blue; //Cor dos objetos
+    float red_cubo, green_cubo, blue_cubo; //Cor dos objetos
+    float red_cone, green_cone, blue_cone;
+    float red_cilindro, green_cilindro, blue_cilindro;
     float scale = 1.0f;
-    boolean teste = false;
+    float rotation_x = 0;
+    float rotation_y = 0;
+    float rotation_z = 0;
+    //False: Perspectiva
+    //True: Ortogonal
+    boolean tipo_projecao = false;
             
-    public Renderer(GLCanvas canvas, PreePol preePol){
+    public Renderer(GLCanvas canvas){
         this.canvas = canvas;
-        this.preePol = preePol;
-        listaPontos = new ArrayList<>();
-        flagPree = false;
         //Vermelho
-        red = 1.0f;
-        green = 0.0f;
-        blue = 0.0f;
+        red_cubo = red_cone = red_cilindro = 1.0f;
+        green_cubo = green_cone = green_cilindro = 0.0f;
+        blue_cubo = blue_cone = blue_cilindro = 0.0f;
     }
     
     @Override
@@ -45,30 +45,7 @@ public class Renderer implements  GLEventListener, MouseInputListener{
         glu = new GLU();
         
         gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);    //Cor de fundo
-        gl.glEnable(GL.GL_DEPTH_TEST);  //Habilita o testde de profundidade
-        
-        glu.gluLookAt(0.0, 0, 10.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-        
-        gl.glMatrixMode(GL.GL_PROJECTION);  //Matriz de projeção
-        gl.glLoadIdentity();    //Correga a matriz identidade
-        //glOrtho(xwmin, xwmax, ywmin, ywmax, dnear, dfar)
-        //gl.glOrtho(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0);
-        //gl.glFrustum(-1.0, 1.0, -1.0, 1.0, -2.0, 2.0);
-        glu.gluPerspective(45.0, 1.0, 0.1, 10.0);
-        
-        /*gl = drawable.getGL();
-        
-        gl.glClearColor(1.0f, 1.0f, 1.0f, 0.0f); //Cor de fundo
-        gl.glMatrixMode(GL.GL_PROJECTION); //Carrega a matriz de projeção
-        gl.glLoadIdentity();
-        
-        glu = new GLU();
-       
-        glu.gluPerspective(45.0f, 1, 1.0f,100.0f);
-       //glu.gluOrtho2D(0.0, 500.0, 0.0, 500.0); //Projeção ortogonal 2D 
-        
-        gl.glEnable(GL.GL_DEPTH_TEST);
-        gl.glPolygonMode(GL.GL_FRONT, GL.GL_FILL);*/
+        gl.glEnable(GL.GL_DEPTH_TEST);  //Habilita o testde de profundidade        
     }
 
     /**
@@ -76,67 +53,46 @@ public class Renderer implements  GLEventListener, MouseInputListener{
      */
     @Override
     public void display(GLAutoDrawable drawable){
-            
-       if(teste){
+        gl.glLoadIdentity();
+        //Posição da câmera
+        glu.gluLookAt(0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
         gl.glMatrixMode(GL.GL_PROJECTION);
         gl.glLoadIdentity();
-        gl.glOrtho(-5, 5, -5, 5, -1, 100);
+        if(tipo_projecao){
+            gl.glOrtho(-5, 5, -5, 5, -1, 100);
+        }else{
+            glu.gluPerspective(45.0, 1.0, 1.0f, 100.0f);   
+        }
         gl.glMatrixMode(GL.GL_MODELVIEW);
-       }else{
-           gl.glMatrixMode(GL.GL_PROJECTION);
-           gl.glLoadIdentity();
-           glu.gluPerspective(45.0, 1.0, 1.0f, 100.0f);
-           gl.glMatrixMode(GL.GL_MODELVIEW);
-       }
-        
         
         //Limpa o buffer
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-        //Define que a matriz é a de modelo
-        gl.glMatrixMode(GL.GL_MODELVIEW);
+         
+        
+        gl.glScaled(scale, scale, scale);
+        gl.glRotatef(rotation_x - 40.0f, 1.0f, 0.0f, 0.0f);
+        gl.glRotatef(rotation_y, 0.0f, 1.0f, 0.0f);
+        gl.glRotatef(rotation_z, 0.0f, 0.0f, 1.0f);
         
         //Desenha um cubo
-       // gl.glColor3f(1.0f, 0.0f, 0.0f);
-        //glut.glutSolidCube(1.0f);
-        gl.glScaled(scale, scale, scale);
+        gl.glColor3f(red_cubo, green_cubo, blue_cubo);
+        glut.glutSolidCube(1.0f);
         gl.glColor3f(0.0f, 0.0f, 0.0f);
         glut.glutWireCube(1.0f);
         
-        gl.glTranslated(2.0, 0.0, 0.0);
+        gl.glTranslated(2.0, 0.0, -1.0);
+        gl.glColor3f(red_cone, green_cone, blue_cone);
+        glut.glutSolidCone(1.0, 2.0, 20, 20);
+        gl.glColor3f(0.0f, 0.0f, 0.0f);
         glut.glutWireCone(1.0, 2.0, 20, 20);
-        gl.glTranslated(-2.0, 0.0, 0.0);
+        
+        gl.glTranslated(-4.0, 0.0, 0.0);
+        gl.glColor3f(red_cilindro, green_cilindro, blue_cilindro);
+        glut.glutSolidCylinder(1.0, 2.0, 20, 20);
+        gl.glColor3f(0.0f, 0.0f, 0.0f);
+        glut.glutWireCylinder(1.0, 2.0, 20, 20);
+
         //Força o desenho das primitivas
-        gl.glFlush();
-        
-        //Se for para preencher o polígono, chama os métodos de PreePol
-        //para receber a lista de pixels a serem pintados para cada
-        //linha de varredura, e pinta tais pixels.
-        /*if(flagPree){
-            linha = preePol.prepara();
-            LinkedList<Pair<Integer, Integer>> listaPixels;
-            
-            while(true){            
-                listaPixels = preePol.preencher();
-                if(listaPixels == null){ break;}
-                for(Pair<Integer, Integer> p: listaPixels){
-                    gl.glPointSize(1);
-                    gl.glBegin(GL.GL_POINTS);
-                    for(int i=p.getKey(); i<=p.getValue(); i++){
-                        gl.glVertex2i(i, linha);
-                    }
-                    gl.glEnd();  
-                }
-                linha++;
-            }
-        }else{  //Não preenche o polígono, apenas desenha os pontos selecionados.
-            gl.glPointSize(10);
-            gl.glBegin(GL.GL_POINTS);
-            for(Pair<Integer, Integer> p : listaPontos){
-                gl.glVertex2i(p.getKey(), p.getValue());
-            }
-            gl.glEnd();
-        }*/
-        
         gl.glFlush();
     }
 
@@ -150,48 +106,8 @@ public class Renderer implements  GLEventListener, MouseInputListener{
      * e adiciona o ponto na PreePol.
      */
     @Override
-    public void mousePressed(java.awt.event.MouseEvent e){
-        
-        teste = !teste;
-        canvas.display();
-    }
+    public void mousePressed(java.awt.event.MouseEvent e){}
     
-    /**
-     * Preparação para o preenchimento do polígono e chamada de Display().
-     * @return True: se foi possível preencher o polígono.
-     * False: se não foi possível preencher o polígono (há menos de 3 pontos
-     * distintos selecionados).
-     */
-    public boolean preencher(){
-        canvas.display();
-        return true;
-    }
-    
-    /**
-     * Verifica de há pontos suficiente para criação de um polígono.
-     * @return True: é possível criar um polígono.
-     * False: não é possível criar um polígono (há menos de 3 pontos
-     * distintos selecionados).
-     */
-    private boolean temPontos(){
-        return (listaPontos.size()>2);
-    }
-    
-    /**
-     * Verifica se o ponto já havia sido selecionado antes.
-     * @param x Coordenada x do ponto
-     * @param y Coordenada y do ponto
-     * @return True: o ponto já existe (já foi selecionado antes)
-     * False: o ponto ainda não existe (não foi selecionado ainda)
-     */
-    private boolean jaExiste(int x, int y){
-        for(Pair<Integer, Integer> p : listaPontos){
-            if (p.getKey()==x && p.getValue()==y){
-                return true;
-            }
-        }
-        return false;
-    }
     
     /**
      * Muda a cor dos objetos.
@@ -199,10 +115,83 @@ public class Renderer implements  GLEventListener, MouseInputListener{
      * @param green Verde no RGB (0-255)
      * @param blue Azul do RGB (0-255)
      */
-    public void setCor(int red, int green, int blue){
-        this.red = red/255.0f;
-        this.green = green/255.0f;
-        this.blue = blue/255.0f;
+    public void setCor(int red, int green, int blue, Figuras figura){        
+        switch(figura){
+            case CUBO:
+                red_cubo = red/255f;
+                green_cubo = green/255f;
+                blue_cubo = blue/255f;
+                break;
+            case CILINDRO:
+                red_cilindro = red/255f;
+                green_cilindro = green/255f;
+                blue_cilindro = blue/255f;
+                break;
+            case CONE:
+                red_cone = red/255f;
+                green_cone = green/255f;
+                blue_cone = blue/255f;
+                break;
+        }
+        canvas.display();
+    }
+    
+    public ArrayList<Integer> getCor(Figuras figura){
+        ArrayList<Integer> rgb = new ArrayList<>(3);
+        
+        switch(figura){
+            case CUBO:
+                rgb.add(0, (int)(red_cubo*255));
+                rgb.add(1, (int)(green_cubo*255));
+                rgb.add(2, (int)(blue_cubo*255));
+                break;
+            case CILINDRO:
+                rgb.add(0, (int)(red_cilindro*255));
+                rgb.add(1, (int)(green_cilindro*255));
+                rgb.add(2, (int)(blue_cilindro*255));
+                break;
+            case CONE:
+                rgb.add(0, (int)(red_cone*255));
+                rgb.add(1, (int)(green_cone*255));
+                rgb.add(2, (int)(blue_cone*255));
+                break;    
+        }
+        
+        return rgb;
+    }
+    
+    @Override
+    public void keyPressed(KeyEvent e){
+        if(e.isControlDown()){
+            switch(e.getKeyCode()){
+                case KeyEvent.VK_EQUALS: case KeyEvent.VK_PLUS:
+                    scale *= 1.1;
+                    break;
+                case KeyEvent.VK_MINUS: case KeyEvent.VK_UNDERSCORE:
+                    scale *= 0.9;
+                break;
+            } 
+        }else{
+            switch(e.getKeyCode()){
+                case KeyEvent.VK_UP : case KeyEvent.VK_KP_UP:
+                    rotation_x += 10;
+                    break;
+                case KeyEvent.VK_DOWN : case KeyEvent.VK_KP_DOWN:
+                    rotation_x -= 10;
+                    break;
+                case KeyEvent.VK_RIGHT: case KeyEvent.VK_KP_RIGHT:
+                    rotation_z += 10;
+                    break;
+                case KeyEvent.VK_LEFT: case KeyEvent.VK_KP_LEFT:
+                    rotation_z -= 10;
+                    break;
+                case KeyEvent.VK_P:
+                    tipo_projecao = !tipo_projecao;
+            }
+        
+        
+        }
+        
         canvas.display();
     }
     
@@ -219,8 +208,7 @@ public class Renderer implements  GLEventListener, MouseInputListener{
 
     @Override
     public void mouseEntered(java.awt.event.MouseEvent e){
-    scale *= 1.1;
-    canvas.display();
+
     
     }
 
@@ -228,11 +216,15 @@ public class Renderer implements  GLEventListener, MouseInputListener{
     public void mouseExited(java.awt.event.MouseEvent e){}
 
     @Override
-    public void mouseDragged(java.awt.event.MouseEvent e){
-    
-    }
+    public void mouseDragged(java.awt.event.MouseEvent e){}
 
     @Override
     public void mouseMoved(java.awt.event.MouseEvent e){}  
 
+    @Override
+    public void keyTyped(KeyEvent e){}
+
+    @Override
+    public void keyReleased(KeyEvent e){}
+    
 }
